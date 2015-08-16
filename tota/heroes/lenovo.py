@@ -1,6 +1,7 @@
 from tota.utils import closest, distance, sort_by_distance, possible_moves
 from tota import settings
 
+AUTHOR = 'Angel'
 
 def create():
 
@@ -35,7 +36,10 @@ def create():
                     # of finally just move to him (if I have life > 50)
                     moves = sort_by_distance(closest_enemy,
                                              possible_moves(self, things))
-                    back_moves = moves[len(moves)-1]
+                    if len(moves) > 0:
+                        back_moves = moves[len(moves)-1]
+                    else:
+                        back_moves = self.position
                     if moves and int(real_life) > 50:
                         return 'move', moves[0]
                     else:

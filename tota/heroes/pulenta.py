@@ -4,6 +4,8 @@ from tota.utils import closest, distance, sort_by_distance, possible_moves
 from tota.settings import STUN_DISTANCE, ENEMY_TEAMS, FIREBALL_RADIUS, FIREBALL_DISTANCE, HERO_ATTACK_DISTANCE
 from tota.things import Ancient, Hero, Tower, Creep
 
+AUTHOR = 'francusa'
+
 
 def create():
     def pulenta_hero_logic(self, things, t):
@@ -25,8 +27,8 @@ def create():
                 if closest_enemy_distance <= STUN_DISTANCE and self.can('stun', t):
                     # try to stun him
                     return 'stun', closest_enemy.position
-                elif closest_enemy_distance <= FIREBALL_DISTANCE and self.can('fireball', t)\
-                        and closest_enemy_distance > FIREBALL_RADIUS:
+                elif FIREBALL_RADIUS < closest_enemy_distance <= FIREBALL_DISTANCE \
+                        and self.can('fireball', t):
                     # else try to fireball him, but only if I'm not in range
                     return 'fireball', closest_enemy.position
                 elif closest_enemy_distance <= HERO_ATTACK_DISTANCE:
@@ -41,7 +43,7 @@ def create():
                     their_base = [thing for thing in things.values()
                                   if thing.team == enemy_team and isinstance(thing, Ancient)][0]
                     my_tower = [thing for thing in things.values()
-                                if thing.team == self.team and isinstance(thing, Tower)][0]
+                                if thing.team == self.team and isinstance(thing, Tower)]
                     my_team = [thing for thing in things.values()
                                if thing.team == self.team and isinstance(thing, Creep)]
                     closest_to_base = closest(their_base, my_team)
@@ -54,14 +56,20 @@ def create():
                                      and (isinstance(thing, Creep) or isinstance(thing, Hero))
                                      and distance(thing, their_base) < distance(self, their_base)]
                     #my_team_pos = map(lambda x: x.position, my_team)
+                    team_reference = snd_closest_to_base if snd_closest_to_base is not None \
+                        else closest_to_base
 
                     if self.max_life < 300:
-                        element = my_tower
+                        if my_tower:
+                            my_tower = my_tower[0]
+                            element = my_tower
+                        else:
+                            element = team_reference
                     # elif len(enemies_close) > 2:
                     #     element = snd_closest_to_base
-                    elif distance(their_base, snd_closest_to_base) > distance(their_base, self):
+                    elif distance(their_base, team_reference) > distance(their_base, self):
                         if len(enemies_close) > 2:
-                            element = snd_closest_to_base
+                            element = team_reference
                         elif len(enemies_close) > 1:
                             return None
                         else:
