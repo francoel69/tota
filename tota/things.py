@@ -27,8 +27,10 @@ class Thing:
         self.possible_actions = {}
         self.possible_actions_cooldowns = {}
 
+        self.last_action_t = None
         self.last_action = None
         self.last_target = None
+        self.last_action_done = None
 
     @property
     def alive(self):
@@ -45,6 +47,7 @@ class Thing:
     def get_action(self, things, t):
         """Call act to get the next action, and log the results."""
         result = self.act(things, t)
+        self.last_action_t = t
         if result is None:
             self.last_action = None
             self.last_target = None

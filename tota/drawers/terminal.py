@@ -1,7 +1,19 @@
+from os import system
+
 from tota.game import Drawer
 from tota import settings
 
 from termcolor import colored
+
+
+def health_bar(length, life, max_life):
+    """Create a small unicode health bar."""
+    life = max(life, 0)
+    life_chars_count = int(life / (max_life / length))
+    life_chars = life_chars_count * '\u2588'
+    no_life_chars = (length - life_chars_count) * '\u2591'
+
+    return life_chars + no_life_chars
 
 
 class TerminalDrawer(Drawer):
@@ -51,33 +63,34 @@ class TerminalDrawer(Drawer):
         # game stats
         screen += '\nticks:{}'.format(game.world.t)
 
-        # print hero stats
-        for hero in sorted(game.heroes, key=lambda x: x.name):
-            if hero.alive:
-                # a small "health bar" with unicode chars, from 0 to 10 chars
-                life_chars_count = int((10.0 / hero.max_life) * hero.life)
-                life_chars = life_chars_count * '\u2588'
-                no_life_chars = (10 - life_chars_count) * '\u2591'
-                if self.use_basic_icons:
-                    heart = ''
-                else:
-                    heart = '\u2665 '
-                life_bar = heart + '{}{}'.format(life_chars, no_life_chars)
-            else:
-                if self.use_basic_icons:
-                    skull = ''
-                else:
-                    skull = '\u2620 '
-                life_bar = skull + '[dead]'
+        # print teams stats
+        for team in (settings.TEAM_RADIANT, settings.TEAM_DIRE):
+            screen += '\n' + colored(team.upper(), settings.TEAM_COLORS[team])
 
-            hero_template = '{bar}({life}) {name} ({level})                     '
-            hero_stats = hero_template.format(bar=life_bar,
-                                              name=hero.name,
-                                              life=int(hero.life),
-                                              level=hero.level)
+            ancient = game.ancients[team]
+            team_heroes = [hero for hero in game.heroes
+                           if hero.team == team]
 
-            screen += '\n' + colored(hero_stats,
-                                     settings.TEAM_COLORS[hero.team])
+            ancient_template = '{icon} {bar}({life}) Ancient                              '
+            ancient_stats = ancient_template.format(
+                icon=ancient.ICON_BASIC if self.use_basic_icons else ancient.ICON,
+                bar=health_bar(20, ancient.life, ancient.max_life),
+                life=int(ancient.life) if ancient.alive else 'destroyed!',
+            )
+
+            screen += '\n' + colored(ancient_stats, settings.TEAM_COLORS[team])
+
+            for hero in sorted(team_heroes, key=lambda x: x.name):
+                hero_template = '{icon} {bar}({life}) Hero: {name} ({level})              '
+                hero_stats = hero_template.format(
+                    icon=hero.ICON_BASIC if self.use_basic_icons else hero.ICON,
+                    bar=health_bar(20, hero.life, hero.max_life),
+                    name=hero.name,
+                    life=int(hero.life) if hero.alive else 'dead',
+                    level=hero.level,
+                )
+
+                screen += '\n' + colored(hero_stats, settings.TEAM_COLORS[team])
 
         # print events (of last step) for debugging
         if game.debug:
@@ -86,6 +99,10 @@ class TerminalDrawer(Drawer):
                                           settings.TEAM_COLORS[thing.team])
                                   for t, thing, event in game.events
                                   if t == game.world.t])
+
+        if game.debug:
+            system('clear')
+
         GO_TO_TOP = '\033[0;0H'
         print(GO_TO_TOP + screen)
 
