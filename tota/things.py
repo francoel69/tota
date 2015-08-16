@@ -169,7 +169,7 @@ class Hero(Thing):
     ICON = '\u2689'
     ICON_BASIC = 'o'
 
-    def __init__(self, name, team, act_function, position=None):
+    def __init__(self, name, team, act_function, author, position=None):
         super().__init__(name=name,
                          life=0,
                          team=team,
@@ -193,6 +193,8 @@ class Hero(Thing):
             'stun': settings.STUN_COOLDOWN,
         }
         self.respawn_at = 0
+
+        self.author = author
 
     @property
     def level(self):
