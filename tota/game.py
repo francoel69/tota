@@ -1,3 +1,4 @@
+from collections import defaultdict
 import random
 import time
 
@@ -40,12 +41,14 @@ class Game:
 
         self.heroes = []
         self.ancients = {}
+        self.towers = {}
         self.events = []
+        self.scores = defaultdict(lambda: 0)
 
         self.world = World(world_size)
 
         self.initialize_world_map()
-        self.cache_ancients()
+        self.cache_structures()
         self.initialize_heroes()
 
     def initialize_world_map(self):
@@ -54,9 +57,9 @@ class Game:
             map_text = map_file.read()
             self.world.import_map(map_text)
 
-    def cache_ancients(self):
+    def cache_structures(self):
         """
-        Find each team's ancient, and store it in a dict for faster access.
+        Find each team's structures, and store it dicts for faster access.
         """
         def get_ancient(team):
             ancients = [thing for thing in self.world.things.values()
@@ -70,8 +73,13 @@ class Game:
             else:
                 return ancients[0]
 
+        def get_towers(team):
+            return [thing for thing in self.world.things.values()
+                    if isinstance(thing, Tower) and thing.team == team]
+
         for team in (settings.TEAM_DIRE, settings.TEAM_RADIANT):
             self.ancients[team] = get_ancient(team)
+            self.towers[team] = get_towers(team)
 
     def initialize_heroes(self):
         """
@@ -227,6 +235,9 @@ class Game:
                 self.event(thing, 'died')
                 if isinstance(thing, Hero):
                     thing.respawn_at = self.world.t + settings.HERO_RESPAWN_COOLDOWN
+                if isinstance(thing, (Hero, Tower)):
+                    enemy_team = settings.ENEMY_TEAMS[thing.team]
+                    self.scores[enemy_team] += 1
 
     def draw(self):
         """Call each drawer instance."""

@@ -6,8 +6,8 @@ from tota import settings
 from termcolor import colored
 
 
-def health_bar(length, life, max_life):
-    """Create a small unicode health bar."""
+def make_bar(length, life, max_life):
+    """Create a small unicode bar."""
     life = max(life, 0)
     life_chars_count = int(life / (max_life / length))
     life_chars = life_chars_count * '\u2588'
@@ -65,31 +65,52 @@ class TerminalDrawer(Drawer):
 
         # print teams stats
         for team in (settings.TEAM_RADIANT, settings.TEAM_DIRE):
-            screen += '\n' + colored(team.upper(), settings.TEAM_COLORS[team])
+            team_template = '{name}: {score}'
+            team_stats = team_template.format(
+                name=team.upper(),
+                score=game.scores[team],
+            )
+
+            screen += '\n' + colored(team_stats, settings.TEAM_COLORS[team])
 
             ancient = game.ancients[team]
-            team_heroes = [hero for hero in game.heroes
+            towers = game.towers[team]
+            heroes = [hero for hero in game.heroes
                            if hero.team == team]
 
             ancient_template = '{icon} {bar}({life}/{max_life}) Ancient                              '
             ancient_stats = ancient_template.format(
                 icon=ancient.ICON_BASIC if self.use_basic_icons else ancient.ICON,
-                bar=health_bar(20, ancient.life, ancient.max_life),
+                bar=make_bar(20, ancient.life, ancient.max_life),
                 life=int(ancient.life) if ancient.alive else 'destroyed!',
                 max_life=int(ancient.max_life),
             )
 
             screen += '\n' + colored(ancient_stats, settings.TEAM_COLORS[team])
 
-            for hero in sorted(team_heroes, key=lambda x: x.name):
-                hero_template = '{icon} {bar}({life}/{max_life}) Hero: {name} ({level})              '
+            for tower in sorted(towers, key=lambda x: x.position):
+                tower_template = '{icon} {bar}({life}/{max_life}) Tower                               '
+                tower_stats = tower_template.format(
+                    icon=tower.ICON_BASIC if self.use_basic_icons else tower.ICON,
+                    bar=make_bar(20, tower.life, tower.max_life),
+                    life=int(tower.life) if tower.alive else 'destroyed!',
+                    max_life=int(tower.max_life),
+                )
+
+                screen += '\n' + colored(tower_stats, settings.TEAM_COLORS[team])
+
+            for hero in sorted(heroes, key=lambda x: x.name):
+                hero_template = '{icon} {bar}({life}/{max_life}) Hero: {name}. Lvl {level} {level_bar} ({author})                         '
                 hero_stats = hero_template.format(
                     icon=hero.ICON_BASIC if self.use_basic_icons else hero.ICON,
-                    bar=health_bar(20, hero.life, hero.max_life),
+                    bar=make_bar(20, hero.life, hero.max_life),
                     name=hero.name,
                     life=int(hero.life) if hero.alive else 'dead',
                     max_life=int(hero.max_life),
                     level=hero.level,
+                    level_bar=make_bar(10, hero.xp % settings.XP_TO_LEVEL,
+                                       settings.XP_TO_LEVEL),
+                    author=hero.author,
                 )
 
                 screen += '\n' + colored(hero_stats, settings.TEAM_COLORS[team])
